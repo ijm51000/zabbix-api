@@ -117,7 +117,7 @@ def start_maintenance(host_id):
 
 
 host_id = get_host_id(hostname)
-print 'The host id for FCR-v-ESBBUILD01 is {} '.format(host_id)
+print 'The host id for {} is {} '.format(hostname, host_id)
 # check if a maintenance period exisits for this host
 maint_id = get_maintenance_id(hostname):
 
