@@ -7,11 +7,11 @@ import sys
 import requests
 
 # use get options for this, going forward
-user = "imac"
-password = "imac"
-hostname = 'FCR-V-ESBBUILD01'
-server = "blmnpv02.openans.co.uk"
-api = "http://" + server + "/zabbix/api_jsonrpc.php"
+user = ''
+password = ''
+hostname = ''
+server = ''
+api = 'http://" + server + "/zabbix/api_jsonrpc.php'
 headers = {'content-type': 'application/json-rpc'}
 
 # setup time periods we need unix time stamps :-|
