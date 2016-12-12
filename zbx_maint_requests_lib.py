@@ -19,18 +19,25 @@ now = int(time.time())
 x = datetime.now() + timedelta(seconds=3600)
 float = str(time.mktime(x.timetuple()))
 until = int(float.split('.')[0])
-
+class MyParser(argparse.ArgumentParser):
+     def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+parser = MyParser()
 parser = argparse.ArgumentParser(description='This program sets a 1 hour maintenance period on the given hosts')
-parser.add_argument('-p', action='store', dest='password', help='zabbix user password')
-parser.add_argument('-u', action='store', dest='user', help='zabbix user name')
-parser.add_argument('-n', action='append', dest='hosts', default=[], help='comma separated list of host names to put in maitenance')
-parser.add_argument('-s', action='store', dest='server', help='the zabbix server url')
+parser = argparse.ArgumentParser(add_help=True)
+parser.add_argument('-p', action='store', dest='password', required=True, help='zabbix user password')
+parser.add_argument('-u', action='store', dest='user', required=True, help='zabbix user name')
+parser.add_argument('-n', action='append', dest='hosts', default=[], required=True, help='Host name to put in maitenance use multiple -n for additional hosts')
+parser.add_argument('-s', action='store', dest='server', required=True, help='the zabbix server url')
 
-results = parser.parse_args()
-user = results.user
-password = results.password
-hostnames = results.hosts
-server = results.server
+
+options = parser.parse_args()
+user = options.user
+password = options.password
+hostnames = options.hosts
+server = options.server
 
 api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 print api
