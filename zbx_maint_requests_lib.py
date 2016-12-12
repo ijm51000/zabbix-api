@@ -5,13 +5,13 @@ import time
 import json
 import sys
 import requests
+import argparse
 
 # use get options for this, going forward
 user = ''
 password = ''
-hostname = ''
+hostnames = ''
 server = ''
-api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 headers = {'content-type': 'application/json-rpc'}
 
 # setup time periods we need unix time stamps :-|
@@ -20,8 +20,20 @@ x = datetime.now() + timedelta(seconds=3600)
 float = str(time.mktime(x.timetuple()))
 until = int(float.split('.')[0])
 
+parser = argparse.ArgumentParser(description='This program sets a 1 hour maintenance period on the given hosts')
+parser.add_argument('-p', action='store', dest='password', help='zabbix user password')
+parser.add_argument('-u', action='store', dest='user', help='zabbix user name')
+parser.add_argument('-n', action='append', dest='hosts', default=[], help='comma separated list of host names to put in maitenance')
+parser.add_argument('-s', action='store', dest='server', help='the zabbix server url')
 
+results = parser.parse_args()
+user = results.user
+password = results.password
+hostnames = results.hosts
+server = results.server
 
+api = 'http://' + server + '/zabbix/api_jsonrpc.php'
+print api
 def get_token():
 	'''
 	get the auth token for the given credntials
@@ -36,9 +48,9 @@ def get_token():
 	else:
 	    authtoken = False			
 		 
-	return authtoken
+ 	return authtoken
 
-
+ 
 def get_host_id(hostname):
     '''
     We have to have host_id zabbix only uses this
@@ -74,9 +86,13 @@ def get_maintenance_id(hostname):
     re = requests.get(api, headers=headers, json=data)
     if re.status_code == requests.codes.ok:
         return_data = re.json()
-    	maint_id = return_data['result'][0]['maintenanceid']
-    else: 
-        maint_id = false
+        try:
+    	    maint_id = return_data['result'][0]['maintenanceid']
+        except: 
+            maint_id = False
+    else:
+        maint_id =False
+
     return maint_id    
 
 def del_maintenance(maint_id):
@@ -92,13 +108,13 @@ def del_maintenance(maint_id):
         deleted = True
     else:
         deleted = False
-    return deleted
+    return deleted 
 
 
 def start_maintenance(host_id):
     '''
     Set a new maintenance period
-    '''
+    ''' 
 	
     token = get_token()
     data = {"jsonrpc": "2.0", "method": "maintenance.create", "params":
@@ -111,23 +127,23 @@ def start_maintenance(host_id):
         maint_set = True
     else:
         maint_set = False
-    return maint_set
+    return maint_set 
 
 
+for hostname in hostnames:
+    host_id = get_host_id(hostname)
+    print 'The host id for {} is {} '.format(hostname, host_id)
+    # check if a maintenance period exisits for this host
+    maint_id = get_maintenance_id(hostname)
 
-host_id = get_host_id(hostname)
-print 'The host id for {} is {} '.format(hostname, host_id)
-# check if a maintenance period exisits for this host
-maint_id = get_maintenance_id(hostname)
+    # del existing maintenance id if it exist, so we can set a new one
+    if maint_id:
+        del_maintenance(maint_id)
 
-# del existing maintenance id if it exist, so we can set a new one
-if maint_id:
-	del_maintenance(maint_id)
-
-# set new maintenance period
-if start_maintenance(host_id):
+    # set new maintenance period
+    if start_maintenance(host_id):
 	print 'Maintenance period for {} is set for 1 hour'.format(hostname)
-else:
+    else:
 	print 'Something went wrong; no maintenance period set for {} '.format(hostname)
 
 
