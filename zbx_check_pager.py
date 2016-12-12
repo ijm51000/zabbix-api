@@ -6,8 +6,11 @@ import json
 import sys
 import requests
 import argparse
+import socket
 
 # use get options for this, going forward
+zabbix1 = 'ip server 1'
+zabbix2 = 'ip server 2'
 user = ''
 password = ''
 hostnames = ''
@@ -25,15 +28,15 @@ parser = argparse.ArgumentParser(description='This program sets a 1 hour mainten
 parser = argparse.ArgumentParser(add_help=True)
 parser.add_argument('-p', action='store', dest='password', required=True, help='zabbix user password')
 parser.add_argument('-u', action='store', dest='user', required=True, help='zabbix user name')
-parser.add_argument('-s', action='store', dest='server', required=True, help='the zabbix server url')
+# parser.add_argument('-s', action='store', dest='server', required=True, help='the zabbix server url')
 
 
 options = parser.parse_args()
 user = options.user
 password = options.password
-server = options.server
+# server = options.server
 
-api = 'http://' + server + '/zabbix/api_jsonrpc.php'
+# api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 
 def get_token():
 	'''
@@ -51,6 +54,22 @@ def get_token():
 		 
  	return authtoken
 
+def get_active_zabbix_server(server):
+        '''
+        check which servers are active
+        '''
+        print server
+        zbx_port = 10051
+        skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        skt.settimeout(5)
+        print 'Checking if Zabbix Server at %s is available' % (server)
+        try:
+                skt.connect((server, zbx_port))
+                print 'Connected to zabbix at IP %s on port %s' % (server, zbx_port)
+                return server
+        except socket.error, exception:
+                print 'Zabbix server not available at IP %s  on port %s error is: %s\n' % (server, zbx_port, exception)
+                return False
 
 
 
@@ -81,15 +100,23 @@ def check_pager_actions(authtoken):
 		 
  	return authtoken
 
+server = get_active_zabbix_server(zabbix2)
+if not server:
+	server = get_active_zabbix_server(zabbix1)
+if not server:
+	print 'No zabbix server found, bigger problems, just going to exit'
+	sys.exit(0)
 
+api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 
 authtoken = get_token()
 
 pager_data = check_pager_actions(authtoken)
-
+print pager_data['result']
 if not pager_data['result']:
 	print 'nothing is disabled'
 else:
 	print 'error there are pager items disbaled'
+	
 	
 

@@ -6,8 +6,18 @@ import json
 import sys
 import requests
 import argparse
+import socket
+
+class MyParser(argparse.ArgumentParser):
+     def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+        
 
 # use get options for this, going forward
+zabbix1 = 'ip server 1'
+zabbix2 = 'ip server 2'
 user = ''
 password = ''
 hostnames = ''
@@ -19,28 +29,42 @@ now = int(time.time())
 x = datetime.now() + timedelta(seconds=3600)
 float = str(time.mktime(x.timetuple()))
 until = int(float.split('.')[0])
-class MyParser(argparse.ArgumentParser):
-     def error(self, message):
-        sys.stderr.write('error: %s\n' % message)
-        self.print_help()
-        sys.exit(2)
+
+        
 parser = MyParser()
 parser = argparse.ArgumentParser(description='This program sets a 1 hour maintenance period on the given hosts')
 parser = argparse.ArgumentParser(add_help=True)
 parser.add_argument('-p', action='store', dest='password', required=True, help='zabbix user password')
 parser.add_argument('-u', action='store', dest='user', required=True, help='zabbix user name')
 parser.add_argument('-n', action='append', dest='hosts', default=[], required=True, help='Host name to put in maitenance use multiple -n for additional hosts')
-parser.add_argument('-s', action='store', dest='server', required=True, help='the zabbix server url')
+# parser.add_argument('-s', action='store', dest='server', required=True, help='the zabbix server url')
 
 
 options = parser.parse_args()
 user = options.user
 password = options.password
 hostnames = options.hosts
-server = options.server
+# server = options.server
 
-api = 'http://' + server + '/zabbix/api_jsonrpc.php'
-print api
+def get_active_zabbix_server(server):
+        '''
+        check which servers are active
+        '''
+        print server
+        zbx_port = 10051
+        skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        skt.settimeout(5)
+        print 'Checking if Zabbix Server at %s is available' % (server)
+        try:
+                skt.connect((server, zbx_port))
+                print 'Connected to zabbix at IP %s on port %s' % (server, zbx_port)
+                return server
+        except socket.error, exception:
+                print 'Zabbix server not available at IP %s  on port %s error is: %s\n' % (server, zbx_port, exception)
+                return False
+
+
+
 def get_token():
 	'''
 	get the auth token for the given credntials
@@ -136,6 +160,14 @@ def start_maintenance(host_id):
         maint_set = False
     return maint_set 
 
+server = get_active_zabbix_server(zabbix1)
+if not server:
+	server = get_active_zabbix_server(zabbix2)
+if not server:
+	print 'No zabbix server found, bigger problems, just going to exit'
+	sys.exit(0)
+
+api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 
 for hostname in hostnames:
     host_id = get_host_id(hostname)
