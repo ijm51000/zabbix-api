@@ -11,7 +11,7 @@ user = ''
 password = ''
 hostname = ''
 server = ''
-api = 'http://" + server + "/zabbix/api_jsonrpc.php'
+api = 'http://' + server + '/zabbix/api_jsonrpc.php'
 headers = {'content-type': 'application/json-rpc'}
 
 # setup time periods we need unix time stamps :-|
@@ -27,22 +27,22 @@ def get_token():
 	get the auth token for the given credntials
 	need to change this so the user_name & password are passed in
 	'''
-    data = {'jsonrpc': '2.0', 'method': 'user.login', 'params': {'user': user, 'password': password},
+        data = {'jsonrpc': '2.0', 'method': 'user.login', 'params': {'user': user, 'password': password},
             'id': '0'}
 	re = requests.get(api, headers=headers, json=data)
 	if re.status_code == requests.codes.ok:
-		return_data = re.json()
-		authtoken = return_data['result']
+	    return_data = re.json()
+	    authtoken = return_data['result']
 	else:
-		authtoken = False			
+	    authtoken = False			
 		 
 	return authtoken
 
 
 def get_host_id(hostname):
-	'''
-	We have to have host_id zabbix only uses this
-	'''
+    '''
+    We have to have host_id zabbix only uses this
+    '''
 	
     token = get_token()
     data = {"jsonrpc": "2.0", "method": "host.get", 
@@ -51,13 +51,13 @@ def get_host_id(hostname):
 	}, 
 	"auth": token, "id": 0}
 
-	re = requests.get(api, headers=headers, json=data)
-	if re.status_code == requests.codes.ok:
-		return_data = re.json()
-		host_id = return_data['result'][0]['hostid']
-	else:
-		host_id = False
-	return host_id
+    re = requests.get(api, headers=headers, json=data)
+    if re.status_code == requests.codes.ok:
+        return_data = re.json()
+	host_id = return_data['result'][0]['hostid']
+    else:
+	host_id = False
+    return host_id
 
 def get_maintenance_id(hostname):
     '''
@@ -72,34 +72,33 @@ def get_maintenance_id(hostname):
             		"selectTimeperiods": "extend", "hostids": host_id},
     "auth": token, "id": 0}
     re = requests.get(api, headers=headers, json=data)
-    if re.status_code == requests.codes.ok
-    		return_data = re.json()
-    		maint_id = return_data['result'][0]['maintenanceid']
-	else: 
-		maint_id = false
-	return maint_id    
+    if re.status_code == requests.codes.ok:
+        return_data = re.json()
+    	maint_id = return_data['result'][0]['maintenanceid']
+    else: 
+        maint_id = false
+    return maint_id    
 
 def del_maintenance(maint_id):
-	'''
-	we must delete the exisitng id befoe we can create a new one with the same name
-	'''
-	
+    '''
+    we must delete the exisitng id befoe we can create a new one with the same name
+    '''
     token = get_token()
     data = {"jsonrpc": "2.0", "method": "maintenance.delete", 
     "params": [maint_id], "auth": token, "id": 1}
     
     re = requests.get(api, headers=headers, json=data)
-    	if re.status_code == requests.codes.ok:
-    		deleted = True
-    	else:
-    		deleted = False
-    	return deleted
+    if re.status_code == requests.codes.ok:
+        deleted = True
+    else:
+        deleted = False
+    return deleted
 
 
 def start_maintenance(host_id):
-	'''
-	Set a new maintenance period
-	'''
+    '''
+    Set a new maintenance period
+    '''
 	
     token = get_token()
     data = {"jsonrpc": "2.0", "method": "maintenance.create", "params":
@@ -109,17 +108,17 @@ def start_maintenance(host_id):
     
     re = requests.get(api, headers=headers, json=data)
     if re.status_code == requests.codes.ok:
-    		maint_set = True
-    	else:
-    		maint_set = False
-	return maint_set
+        maint_set = True
+    else:
+        maint_set = False
+    return maint_set
 
 
 
 host_id = get_host_id(hostname)
 print 'The host id for {} is {} '.format(hostname, host_id)
 # check if a maintenance period exisits for this host
-maint_id = get_maintenance_id(hostname):
+maint_id = get_maintenance_id(hostname)
 
 # del existing maintenance id if it exist, so we can set a new one
 if maint_id:
